@@ -1,0 +1,47 @@
+import requests
+import bs4
+import csv
+import lxml
+from itertools import zip_longest
+
+job_title = []
+location_name = []
+skills = []
+links = []
+status = []
+requirement = []
+date = []
+
+result = requests.get('https://www.flexjobs.com/search?search=c%2B%2B&location=')
+src = result.content
+soup = bs4.BeautifulSoup(src, "html.parser")
+
+job_titles = soup.find_all('h5', {'class': 'fw-bold'})
+location_names = soup.find_all("p", {"class": "job-type-info"})
+job_skills = soup.find_all("p", {"class": "job-description"})
+company_status = soup.find_all('span', {'class': 'text-danger'})
+Date_Posted = soup.find_all("div", {"class": "col-2 col-sm-1 pe-1"})
+
+for i in range(len(job_titles)):
+    job_title.append(job_titles[i].text)
+    links.append("https://www.flexjobs.com/" + job_titles[i].find("a").attrs['href'])
+    location_name.append(location_names[i].text)
+    skills.append(job_skills[i].text)
+    status.append(company_status[i].text)
+    date.append(Date_Posted[i].text)
+
+for link in links:
+    result = requests.get(link)
+    src = result.content
+    soup = bs4.BeautifulSoup(src, "html.parser")
+    job_requirements = soup.find("div", {"class": "job-description"})
+    requirement.append(job_requirements.text)
+
+print(requirement, date, status)
+
+file_list = [job_title, location_name, skills, links, status, requirement, date]
+exported = zip_longest(*file_list)
+with open("taha.csv", "w") as myfile:
+    wr = csv.writer(myfile)
+    wr.writerow(["job titles", "location_names", "skills", "links", "company_status", "job_requirements", "Date_Posted"])
+    wr.writerows(exported)
